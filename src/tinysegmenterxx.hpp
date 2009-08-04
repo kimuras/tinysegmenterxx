@@ -19,6 +19,7 @@
 #include <cstring>
 #include <cstdarg>
 #include <cstdlib>
+#include <stdint.h>
 #include "tinysegmenterxx_train.hpp"
 
 namespace tinysegmenterxx {
