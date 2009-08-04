@@ -1,0 +1,40 @@
+#                                               -*- Autoconf -*-
+# Process this file with autoconf to produce a configure script.
+
+# AC_PREREQ([2.63])
+AC_INIT([TinySegmenterxx], [0.0.1], [brmtrain@gmail.com])
+AC_CONFIG_SRCDIR([config.h.in])
+AC_CONFIG_HEADERS([config.h])
+AM_INIT_AUTOMAKE(TinySegmenterxx, 0.0.1)
+
+# Options
+AC_ARG_ENABLE(debug,
+[  --enable-debug            trun on debugging [default no]])
+if test "$enable_debug" = "yes"; then
+  CPPFLAGS="$CFLAGS -DDEBUG"
+fi
+
+
+
+# Checks for programs.
+AC_PROG_CXX
+
+# Checks for libraries.
+AC_PROG_LIBTOOL
+
+# Checks for header files.
+# AC_CHECK_HEADER(tcutil.h, true, AC_MSG_ERROR([tcutil.h is required]))
+# AC_CHECK_HEADER(tchdb.h, true, AC_MSG_ERROR([tchdb.h is required]))
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_HEADER_STDBOOL
+AC_TYPE_UINT16_T
+
+
+
+
+# Checks for library functions.
+
+AC_CONFIG_FILES([Makefile
+                 src/Makefile])
+AC_OUTPUT
