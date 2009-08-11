@@ -14,15 +14,8 @@
  */
 
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/file.h>
-#include <unistd.h>
-#include <fcntl.h>
+#include <fcntl.h> //stat stat_buf
 #include "tinysegmenterxx.hpp"
-#include <fstream>
-#include <string>
-#include <iostream>
 
 const unsigned int MAX_BUF_SIZ = 65536;
 
@@ -80,8 +73,6 @@ void procArgs(int argc, char** argv, std::string& separator, std::string& inputP
     std::cerr << "-s needs [zero|tab]" << std::endl;
     exit(1);
   }
-
-
 }
 
 int main(int argc, char** argv)
