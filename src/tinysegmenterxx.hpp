@@ -22,13 +22,17 @@
 #include <stdint.h>
 #include "tinysegmenterxx_train.hpp"
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 namespace tinysegmenterxx {
 
   typedef std::vector<std::string> Segmentes;
 
-  const unsigned int SEGMENT_NUM       = 65536;
   const unsigned int INPUT_MAX_BUF_SIZ = 65536;
   const unsigned int GETSCORE_BUF_SIZ  = 65536;
+  const unsigned int SEGMENT_STACK_SIZ = 6;
   const int DEFAULT_SCORE              = -312;
 
   const char* UP1__ = "UP1__";
@@ -171,6 +175,13 @@ namespace tinysegmenterxx {
       return (char *)wp - str;
     }
 
+    void getVersion(std::string& body)
+    {
+      body.append(PACKAGE_STRING);
+      body.append("\n");
+      body.append("Copyright(C) Shunya Kimura");
+    }
+
   }
 
 
@@ -183,18 +194,13 @@ namespace tinysegmenterxx {
 
     void segment(std::string& input, Segmentes& result)
     {
-      char seg[SEGMENT_NUM][4];
-      char ctype[SEGMENT_NUM][4];
+      char seg[SEGMENT_STACK_SIZ][4];
+      char ctype[SEGMENT_STACK_SIZ][4];
 
-      unsigned int sidx = 0;
-      std::strcpy(seg[sidx++], B3__);
-      std::strcpy(seg[sidx++], B2__);
-      std::strcpy(seg[sidx++], B1__);
-
-      unsigned int cidx = 0;
-      std::strcpy(ctype[cidx++], O__);
-      std::strcpy(ctype[cidx++], O__);
-      std::strcpy(ctype[cidx++], O__);
+      std::strcpy(seg[0], B2__);
+      std::strcpy(seg[1], B1__);
+      std::strcpy(ctype[0], O__);
+      std::strcpy(ctype[1], O__);
 
       unsigned int inputSiz = input.size();
 
@@ -208,94 +214,23 @@ namespace tinysegmenterxx {
       if(!ary) ary = stack;
       int anum;
       util::utftoucs(input.c_str(), ary, &anum);
+      if(anum < 1) return; // check here
       ary[anum] = 0x0000;
-      for(int i = 0; i < anum; ++i){
-        uint16_t stack2[1];
-        stack2[0] = ary[i];
-        const uint16_t* ary2 = stack2;
-        const char* cTypeBuf = util::getCharClass(stack2[0]);
-        std::strcpy(ctype[cidx++], cTypeBuf);
-        util::ucstoutf(ary2, 1, seg[sidx++]);
-        if(sidx >= SEGMENT_NUM - 6) break;
+      int preSegsNum = 0;
+      (anum < 4) ? preSegsNum = anum : preSegsNum = 4;
+      for(int i = 0; i < preSegsNum; ++i){
+        uint16_t ucsChar = ary[i];
+        const uint16_t* ucsCharPtr = &ucsChar;
+        std::strcpy(ctype[i + 2], util::getCharClass(ucsChar));
+        util::ucstoutf(ucsCharPtr, 1, seg[i + 2]);
       }
-      if(ary != stack) delete[] ary;
-      std::strcpy(seg[sidx++], E1__);
-      std::strcpy(seg[sidx++], E2__);
-      std::strcpy(seg[sidx++], E3__);
-      std::strcpy(ctype[cidx++], O__);
-      std::strcpy(ctype[cidx++], O__);
-      std::strcpy(ctype[cidx++], O__);
-      std::string word = seg[3];
+      std::string word = seg[2];
       const char* p1 = U__;
       const char* p2 = U__;
       const char* p3 = U__;
 
-      for(unsigned int i = 4; i < sidx - 3; i++){
-        int score = DEFAULT_SCORE;
-        const char* w1 = seg[i-3];
-        const char* w2 = seg[i-2];
-        const char* w3 = seg[i-1];
-        const char* w4 = seg[i];
-        const char* w5 = seg[i+1];
-        const char* w6 = seg[i+2];
-        const char* c1 = ctype[i-3];
-        const char* c2 = ctype[i-2];
-        const char* c3 = ctype[i-1];
-        const char* c4 = ctype[i];
-        const char* c5 = ctype[i+1];
-        const char* c6 = ctype[i+2];
-#ifdef DEBUG
-        std::cout << w1 << "|\t|" << w2 << "|\t|" << w3 << "|\t|" << w4
-                  << "|\t|" << w5 << "|\t|" << w6 << std::endl;
-        std::cout << c1 << "|\t|" << c2 << "|\t|" << c3 << "|\t|" << c4
-                  << "|\t|" << c5 << "|\t|" << c6 << std::endl;
-#endif
-
-        score += getScore(2, UP1__, p1);
-        score += getScore(2, UP2__, p2);
-        score += getScore(2, UP3__, p3);
-        score += getScore(3, BP1__, p1, p2);
-        score += getScore(3, BP2__, p2, p3);
-        score += getScore(2, UW1__, w1);
-        score += getScore(2, UW2__, w2);
-        score += getScore(2, UW3__, w3);
-        score += getScore(2, UW4__, w4);
-        score += getScore(2, UW5__, w5);
-        score += getScore(2, UW6__, w6);
-        score += getScore(3, BW1__, w2, w3);
-        score += getScore(3, BW2__, w3, w4);
-        score += getScore(3, BW3__, w4, w5);
-        //        std::cout << w1 + w2 + w3 << std::endl;
-        score += getScore(4, TW1__, w1, w2, w3);
-        score += getScore(4, TW2__, w2, w3, w4);
-        score += getScore(4, TW3__, w3, w4, w5);
-        score += getScore(4, TW4__, w4, w5, w6);
-        score += getScore(2, UC1__, c1);
-        score += getScore(2, UC2__, c2);
-        score += getScore(2, UC3__, c3);
-        score += getScore(2, UC4__, c4);
-        score += getScore(2, UC5__, c5);
-        score += getScore(2, UC6__, c6);
-        score += getScore(3, BC1__, c2, c3);
-        score += getScore(3, BC2__, c3, c4);
-        score += getScore(3, BC3__, c4, c5);
-        score += getScore(4, TC1__, c1, c2, c3);
-        score += getScore(4, TC2__, c2, c3, c4);
-        score += getScore(4, TC3__, c3, c4, c5);
-        score += getScore(4, TC4__, c4, c5, c6);
-        score += getScore(3, UQ1__, p1, c1);
-        score += getScore(3, UQ2__, p2, c2);
-        //score += getScore( UQ1(stack,  p1 + c1); // ayashii
-        score += getScore(3, UQ3__, p3, c3);
-        score += getScore(4, BQ1__, p2, c2, c3);
-        score += getScore(4, BQ2__, p2, c3, c4);
-        score += getScore(4, BQ3__, p3, c2, c3);
-        score += getScore(4, BQ4__, p3, c3, c4);
-        score += getScore(5, TQ1__, p2, c1, c2, c3);
-        score += getScore(5, TQ2__, p2, c2, c3, c4);
-        score += getScore(5, TQ3__, p3, c1, c2, c3);
-        score += getScore(5, TQ4__, p3, c2, c3, c4);
-
+      for(int i = 4; i < anum + 3; ++i){
+        int score = getScore(seg, ctype, p1, p2, p3);
         const char* p = O__;
         if(score > 0){
           result.push_back(word);
@@ -305,23 +240,106 @@ namespace tinysegmenterxx {
         p1 = p2;
         p2 = p3;
         p3 = p;
-        word.append(seg[i]);
+        word.append(seg[3]);
+        std::memmove(seg, seg + 1, sizeof(seg) - sizeof(seg[0]));
+        std::memmove(ctype, ctype + 1, sizeof(ctype) - sizeof(ctype[0]));
+        if(i < anum){
+        uint16_t ucsChar = ary[i];
+          const uint16_t* ucsCharPtr = &ucsChar;
+          std::strcpy(ctype[5], util::getCharClass(ucsChar));
+          util::ucstoutf(ucsCharPtr, 1, seg[5]);
+        } else {
+          std::strcpy(ctype[5], O__);
+          if(i >= anum + 1){
+            std::strcpy(seg[5], E2__);
+          } else if(i >= anum){
+            std::strcpy(seg[5], E1__);
+          } else {
+            std::strcpy(seg[5], E3__);
+          }
+        }
       }
-      result.push_back(word);
+      if(word.size() > 0)
+        result.push_back(word);
 
-#ifdef DEBUG
-      std::cout << ">>>>>>>>>>>>" << std::endl;
-      for(unsigned int i = 0; i < cidx; i++){
-        std::cout << "[" << i << "]" << ctype[i] << "\t"<< seg[i]<< std::endl;
-      }
-      std::cout << "<<<<<<<<<<<" << std::endl;
-#endif
+      if(ary != stack) delete[] ary;
     }
 
   private:
     TrainHash train;
+    unsigned int segmentNum;
 
-    int getScore(int num, ...)
+    int getScore(char seg[][4], char ctype[][4],
+                 const char* p1, const char* p2, const char* p3)
+    {
+      int score = DEFAULT_SCORE;
+      const char* w1 = seg[0];
+      const char* w2 = seg[1];
+      const char* w3 = seg[2];
+      const char* w4 = seg[3];
+      const char* w5 = seg[4];
+      const char* w6 = seg[5];
+      const char* c1 = ctype[0];
+      const char* c2 = ctype[1];
+      const char* c3 = ctype[2];
+      const char* c4 = ctype[3];
+      const char* c5 = ctype[4];
+      const char* c6 = ctype[5];
+
+#ifdef DEBUG
+      std::cout << w1 << "|\t|" << w2 << "|\t|" << w3 << "|\t|" << w4
+                << "|\t|" << w5 << "|\t|" << w6 << std::endl;
+      std::cout << c1 << "|\t|" << c2 << "|\t|" << c3 << "|\t|" << c4
+                << "|\t|" << c5 << "|\t|" << c6 << std::endl;
+      std::cout << p1 << "|\t|" << p2 << "|\t|" << p3 << std::endl;
+#endif
+      score += getScoreImpl(2, UP1__, p1);
+      score += getScoreImpl(2, UP2__, p2);
+      score += getScoreImpl(2, UP3__, p3);
+      score += getScoreImpl(3, BP1__, p1, p2);
+      score += getScoreImpl(3, BP2__, p2, p3);
+      score += getScoreImpl(2, UW1__, w1);
+      score += getScoreImpl(2, UW2__, w2);
+      score += getScoreImpl(2, UW3__, w3);
+      score += getScoreImpl(2, UW4__, w4);
+      score += getScoreImpl(2, UW5__, w5);
+      score += getScoreImpl(2, UW6__, w6);
+      score += getScoreImpl(3, BW1__, w2, w3);
+      score += getScoreImpl(3, BW2__, w3, w4);
+      score += getScoreImpl(3, BW3__, w4, w5);
+      score += getScoreImpl(4, TW1__, w1, w2, w3);
+      score += getScoreImpl(4, TW2__, w2, w3, w4);
+      score += getScoreImpl(4, TW3__, w3, w4, w5);
+      score += getScoreImpl(4, TW4__, w4, w5, w6);
+      score += getScoreImpl(2, UC1__, c1);
+      score += getScoreImpl(2, UC2__, c2);
+      score += getScoreImpl(2, UC3__, c3);
+      score += getScoreImpl(2, UC4__, c4);
+      score += getScoreImpl(2, UC5__, c5);
+      score += getScoreImpl(2, UC6__, c6);
+      score += getScoreImpl(3, BC1__, c2, c3);
+      score += getScoreImpl(3, BC2__, c3, c4);
+      score += getScoreImpl(3, BC3__, c4, c5);
+      score += getScoreImpl(4, TC1__, c1, c2, c3);
+      score += getScoreImpl(4, TC2__, c2, c3, c4);
+      score += getScoreImpl(4, TC3__, c3, c4, c5);
+      score += getScoreImpl(4, TC4__, c4, c5, c6);
+      score += getScoreImpl(3, UQ1__, p1, c1);
+      score += getScoreImpl(3, UQ2__, p2, c2);
+      //score += getScoreImpl( UQ1(stack,  p1 + c1); // ayashii
+      score += getScoreImpl(3, UQ3__, p3, c3);
+      score += getScoreImpl(4, BQ1__, p2, c2, c3);
+      score += getScoreImpl(4, BQ2__, p2, c3, c4);
+      score += getScoreImpl(4, BQ3__, p3, c2, c3);
+      score += getScoreImpl(4, BQ4__, p3, c3, c4);
+      score += getScoreImpl(5, TQ1__, p2, c1, c2, c3);
+      score += getScoreImpl(5, TQ2__, p2, c2, c3, c4);
+      score += getScoreImpl(5, TQ3__, p3, c1, c2, c3);
+      score += getScoreImpl(5, TQ4__, p3, c2, c3, c4);
+      return score;
+    }
+
+    int getScoreImpl(int num, ...)
     {
       char stack[GETSCORE_BUF_SIZ];
       char *wp = stack;
