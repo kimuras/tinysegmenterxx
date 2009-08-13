@@ -33,8 +33,7 @@ namespace tinysegmenterxx {
   const unsigned int INPUT_MAX_BUF_SIZ = 65536;
   const unsigned int GETSCORE_BUF_SIZ  = 65536;
   const unsigned int SEGMENT_STACK_SIZ = 6;
-  const int DEFAULT_SCORE              = -312;
-
+  const int DEFAULT_SCORE              = -332;
   const char* UP1__ = "UP1__";
   const char* UP2__ = "UP2__";
   const char* UP3__ = "UP3__";
@@ -111,7 +110,8 @@ namespace tinysegmenterxx {
       } else if (c >= 0x3040 && c <= 0x309F) {
         // Kana
         rv = I__;
-      } else if (c >= 0x30A0 && c <= 0x30FF) {
+        //} else if (c >= 0x30A0 && c <= 0x30FF) {
+      } else if (c >= 0x30A0 && c <= 0x30FA) {
         // Katakana
         rv = K__;
       } else if (c >= 0x4E00 && c <= 0x9FFF) {
@@ -216,20 +216,35 @@ namespace tinysegmenterxx {
       util::utftoucs(input.c_str(), ary, &anum);
       if(anum < 1) return; // check here
       ary[anum] = 0x0000;
-      int preSegsNum = 0;
-      (anum < 4) ? preSegsNum = anum : preSegsNum = 4;
-      for(int i = 0; i < preSegsNum; ++i){
-        uint16_t ucsChar = ary[i];
-        const uint16_t* ucsCharPtr = &ucsChar;
-        std::strcpy(ctype[i + 2], util::getCharClass(ucsChar));
-        util::ucstoutf(ucsCharPtr, 1, seg[i + 2]);
+      if(anum < 5){
+        for(int i = 0; i < anum; ++i){
+          uint16_t ucsChar = ary[i];
+          const uint16_t* ucsCharPtr = &ucsChar;
+          std::strcpy(ctype[i + 2], util::getCharClass(ucsChar));
+          util::ucstoutf(ucsCharPtr, 1, seg[i + 2]);
+        }
+        if(anum == 3){
+          std::strcpy(ctype[4], O__);
+          std::strcpy(ctype[5], O__);
+          std::strcpy(seg[4], E1__);
+          std::strcpy(seg[5], E2__);
+        } else if(anum == 4){
+          std::strcpy(seg[5], E1__);
+          std::strcpy(ctype[5], O__);
+        }
+      } else {
+        for(int i = 0; i < 4; ++i){
+          uint16_t ucsChar = ary[i];
+          const uint16_t* ucsCharPtr = &ucsChar;
+          std::strcpy(ctype[i + 2], util::getCharClass(ucsChar));
+          util::ucstoutf(ucsCharPtr, 1, seg[i + 2]);
+        }
       }
       std::string word = seg[2];
       const char* p1 = U__;
       const char* p2 = U__;
       const char* p3 = U__;
-
-      for(int i = 4; i < anum + 3; ++i){
+      for(int i = 4; i < anum + 2; ++i){
         int score = getScore(seg, ctype, p1, p2, p3);
         const char* p = O__;
         if(score > 0){
@@ -243,16 +258,16 @@ namespace tinysegmenterxx {
         word.append(seg[3]);
         std::memmove(seg, seg + 1, sizeof(seg) - sizeof(seg[0]));
         std::memmove(ctype, ctype + 1, sizeof(ctype) - sizeof(ctype[0]));
-        if(i < anum){
-        uint16_t ucsChar = ary[i];
+        if(i < anum - 1){
+          uint16_t ucsChar = ary[i];
           const uint16_t* ucsCharPtr = &ucsChar;
           std::strcpy(ctype[5], util::getCharClass(ucsChar));
           util::ucstoutf(ucsCharPtr, 1, seg[5]);
         } else {
           std::strcpy(ctype[5], O__);
-          if(i >= anum + 1){
+          if(i >= anum){
             std::strcpy(seg[5], E2__);
-          } else if(i >= anum){
+          } else if(i >= anum - 1){
             std::strcpy(seg[5], E1__);
           } else {
             std::strcpy(seg[5], E3__);
@@ -285,14 +300,6 @@ namespace tinysegmenterxx {
       const char* c4 = ctype[3];
       const char* c5 = ctype[4];
       const char* c6 = ctype[5];
-
-#ifdef DEBUG
-      std::cout << w1 << "|\t|" << w2 << "|\t|" << w3 << "|\t|" << w4
-                << "|\t|" << w5 << "|\t|" << w6 << std::endl;
-      std::cout << c1 << "|\t|" << c2 << "|\t|" << c3 << "|\t|" << c4
-                << "|\t|" << c5 << "|\t|" << c6 << std::endl;
-      std::cout << p1 << "|\t|" << p2 << "|\t|" << p3 << std::endl;
-#endif
       score += getScoreImpl(2, UP1__, p1);
       score += getScoreImpl(2, UP2__, p2);
       score += getScoreImpl(2, UP3__, p3);
@@ -326,7 +333,6 @@ namespace tinysegmenterxx {
       score += getScoreImpl(4, TC4__, c4, c5, c6);
       score += getScoreImpl(3, UQ1__, p1, c1);
       score += getScoreImpl(3, UQ2__, p2, c2);
-      //score += getScoreImpl( UQ1(stack,  p1 + c1); // ayashii
       score += getScoreImpl(3, UQ3__, p3, c3);
       score += getScoreImpl(4, BQ1__, p2, c2, c3);
       score += getScoreImpl(4, BQ2__, p2, c3, c4);
@@ -336,6 +342,15 @@ namespace tinysegmenterxx {
       score += getScoreImpl(5, TQ2__, p2, c2, c3, c4);
       score += getScoreImpl(5, TQ3__, p3, c1, c2, c3);
       score += getScoreImpl(5, TQ4__, p3, c2, c3, c4);
+#ifdef DEBUG
+      std::cout << "score:" << score << std::endl;
+      std::cout << w1 << "|\t|" << w2 << "|\t|" << w3 << "|\t|" << w4
+                << "|\t|" << w5 << "|\t|" << w6 << std::endl;
+      std::cout << c1 << "|\t|" << c2 << "|\t|" << c3 << "|\t|" << c4
+                << "|\t|" << c5 << "|\t|" << c6 << std::endl;
+      std::cout << p1 << "|\t|" << p2 << "|\t|" << p3 << std::endl;
+      std::cout << std::endl;
+#endif
       return score;
     }
 
@@ -359,6 +374,10 @@ namespace tinysegmenterxx {
 
       const struct Train* rv =
         train.in_word_set(stack, wp - stack);
+
+#ifdef DEBUG
+      if(rv) std::cout << stack << "\t" << rv->val << std::endl;
+#endif
 
       if(rv) return rv->val;
 
