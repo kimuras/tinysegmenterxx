@@ -214,21 +214,25 @@ namespace tinysegmenterxx {
       if(!ary) ary = stack;
       int anum;
       util::utftoucs(input.c_str(), ary, &anum);
-      if(anum < 1) return; // check here
+      if(anum < 1) return;
+      if(anum == 1){
+        result.push_back(input);
+        return;
+      }
       ary[anum] = 0x0000;
-      if(anum < 5){
+      if(anum < 4){
         for(int i = 0; i < anum; ++i){
           uint16_t ucsChar = ary[i];
           const uint16_t* ucsCharPtr = &ucsChar;
           std::strcpy(ctype[i + 2], util::getCharClass(ucsChar));
           util::ucstoutf(ucsCharPtr, 1, seg[i + 2]);
         }
-        if(anum == 3){
+        if(anum == 2){
           std::strcpy(ctype[4], O__);
           std::strcpy(ctype[5], O__);
           std::strcpy(seg[4], E1__);
           std::strcpy(seg[5], E2__);
-        } else if(anum == 4){
+        } else if(anum == 3){
           std::strcpy(seg[5], E1__);
           std::strcpy(ctype[5], O__);
         }
@@ -244,7 +248,7 @@ namespace tinysegmenterxx {
       const char* p1 = U__;
       const char* p2 = U__;
       const char* p3 = U__;
-      for(int i = 4; i < anum + 2; ++i){
+      for(int i = 4; i < anum + 3 ; ++i){
         int score = getScore(seg, ctype, p1, p2, p3);
         const char* p = O__;
         if(score > 0){
@@ -258,16 +262,16 @@ namespace tinysegmenterxx {
         word.append(seg[3]);
         std::memmove(seg, seg + 1, sizeof(seg) - sizeof(seg[0]));
         std::memmove(ctype, ctype + 1, sizeof(ctype) - sizeof(ctype[0]));
-        if(i < anum - 1){
+        if(i < anum){
           uint16_t ucsChar = ary[i];
           const uint16_t* ucsCharPtr = &ucsChar;
           std::strcpy(ctype[5], util::getCharClass(ucsChar));
           util::ucstoutf(ucsCharPtr, 1, seg[5]);
         } else {
           std::strcpy(ctype[5], O__);
-          if(i >= anum){
+          if(i >= anum + 1){
             std::strcpy(seg[5], E2__);
-          } else if(i >= anum - 1){
+          } else if(i >= anum ){
             std::strcpy(seg[5], E1__);
           } else {
             std::strcpy(seg[5], E3__);
