@@ -13,6 +13,9 @@
  *
  */
 
+#ifndef TINYSEGMENTERXX_TINYSEGMENTERXX_H
+#define TINYSEGMENTERXX_TINYSEGMENTERXX_H
+
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -24,10 +27,13 @@
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
+#else
+#define PACKAGE_STRING "TinySegmenterxx 0.0.1"
 #endif
 
 namespace tinysegmenterxx {
 
+  /*! @brief The vector object for storing segment result. */
   typedef std::vector<std::string> Segmentes;
 
   const unsigned int INPUT_MAX_BUF_SIZ = 65536;
@@ -95,6 +101,19 @@ namespace tinysegmenterxx {
 
   namespace util {
 
+
+    /*!
+      @brief This method is used in order to get charcter type.
+      @param c : the charcter code of unicode.
+      @return Return any of the following charcter
+      - ASCII           : "A"
+      - Number          : "N"
+      - Kana            : "I"
+      - Katakana        : "K"
+      - Number in Kanji : "M"
+      - Kanji           : "H"
+      - Other           : "O"
+     */
     const char* getCharClass(uint16_t c)
     {
       const char* rv = O__;
@@ -110,7 +129,6 @@ namespace tinysegmenterxx {
       } else if (c >= 0x3040 && c <= 0x309F) {
         // Kana
         rv = I__;
-        //} else if (c >= 0x30A0 && c <= 0x30FF) {
       } else if (c >= 0x30A0 && c <= 0x30FA) {
         // Katakana
         rv = K__;
@@ -129,7 +147,12 @@ namespace tinysegmenterxx {
       return rv;
     }
 
-
+    /*!
+      @brief This method is used in encode utf charcters to unicode charcters.
+      @param str : The pointer to the utf charcters.
+      @param ary : The region for stroing the unicode charcters.
+      @param np  : The pointer for storing num of charcters.
+     */
     void utftoucs(const char *str, uint16_t *ary, int *np)
     {
       const unsigned char *rp = (unsigned char *)str;
@@ -154,7 +177,12 @@ namespace tinysegmenterxx {
       *np = wi;
     }
 
-
+    /*!
+      @brief This method is used in encode unicode charcters to utf charcters.
+      @param ary  : The pointer to the unicode charcters.
+      @param num  : Number of charcters in ary.
+      @param str  : The region for storing utf charcters.
+     */
     int ucstoutf(const uint16_t *ary, int num, char *str)
     {
       unsigned char *wp = (unsigned char *)str;
@@ -181,17 +209,31 @@ namespace tinysegmenterxx {
       body.append("\n");
       body.append("Copyright(C) Shunya Kimura");
     }
-
   }
 
-
+  /*!
+    @brief Class for getting segmentes from Japanese sentense.
+   */
   class Segmenter {
 
   public:
+    /*!
+      @brief Constructor of Segmentr objetc.
+     */
     Segmenter() : train(){}
 
+    /*!
+      @brief Destructor of Segmentr objetc.
+     */
     ~Segmenter(){}
 
+
+    /*!
+      @brief This method is extract segmentes from Japanese sentense.
+      @param input : String object of input sentense.
+      @param result : Segmentes object, the results of segment will be stored this object.
+      @attention Segmentes object is typedef object of vector<string>
+     */
     void segment(std::string& input, Segmentes& result)
     {
       char seg[SEGMENT_STACK_SIZ][4];
@@ -285,9 +327,16 @@ namespace tinysegmenterxx {
     }
 
   private:
-    TrainHash train;
-    unsigned int segmentNum;
 
+    /*! @brief Trainig data object.Perfect hashing. */
+    TrainHash train;
+
+    /*!
+      @brief This method is used in order to get score of the each stack elementes.
+      @param seg[][4] : The pointer for the word stack.
+      @param ctype[][4] : The pointer for the char type stack.
+      @return The score.
+    */
     int getScore(char seg[][4], char ctype[][4],
                  const char* p1, const char* p2, const char* p3)
     {
@@ -358,6 +407,12 @@ namespace tinysegmenterxx {
       return score;
     }
 
+    /*!
+      @brief This method is used in order to get score from training data.
+      @param num : Number of argument.
+      @param ... : The key name for getting the score from training data.
+      @return : Return a score if exist, return 0 if not exist.
+     */
     int getScoreImpl(int num, ...)
     {
       char stack[GETSCORE_BUF_SIZ];
@@ -389,3 +444,5 @@ namespace tinysegmenterxx {
     }
   };
 }
+
+#endif /* TINYSEGMENTERXX_TINYSEGMENTERXX_H */
