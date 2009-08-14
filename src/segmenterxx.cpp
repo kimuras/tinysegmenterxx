@@ -22,7 +22,7 @@ const unsigned int MAX_BUF_SIZ = 65536;
 void printUsage(std::string& fileName)
 {
   std::cerr << std::endl;
-  std::cerr << fileName << " : the utility of tinysegmenter(Japanese setence segmenter)." << std::endl;
+  std::cerr << fileName << " : Super compact Japanese tokenizer in C++." << std::endl;
   std::cerr << "  " << fileName <<  " [options] filepath" << std::endl;
   std::cerr << "  " << fileName <<  " < filepath" << std::endl;
   std::cerr << "    -s, --separator=[tab|zero|return(default)]" << std::endl;
