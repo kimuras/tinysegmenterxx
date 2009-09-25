@@ -28,7 +28,7 @@
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #else
-#define PACKAGE_STRING "TinySegmenterxx 0.0.1"
+#define PACKAGE_STRING "TinySegmenterxx 0.0.2"
 #endif
 
 namespace tinysegmenterxx {
@@ -231,10 +231,11 @@ namespace tinysegmenterxx {
     /*!
       @brief This method is extract segmentes from Japanese sentense.
       @param input : String object of input sentense.
-      @param result : Segmentes object, the results of segment will be stored this object.
+      @param result : Segmentes object, the results of segment will be stored
+      this object.
       @attention Segmentes object is typedef object of vector<string>
      */
-    void segment(std::string& input, Segmentes& result)
+    void segment(const std::string& input, Segmentes& result)
     {
       char seg[SEGMENT_STACK_SIZ][4];
       char ctype[SEGMENT_STACK_SIZ][4];
@@ -332,7 +333,8 @@ namespace tinysegmenterxx {
     TrainHash train;
 
     /*!
-      @brief This method is used in order to get score of the each stack elementes.
+      @brief This method is used in order to get score of
+      the each stack elementes.
       @param seg[][4] : The pointer for the word stack.
       @param ctype[][4] : The pointer for the char type stack.
       @return The score.
